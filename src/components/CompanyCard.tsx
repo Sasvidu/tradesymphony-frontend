@@ -7,7 +7,7 @@ import {
   getStockQuote,
   getStockCandles,
   StockQuote,
-} from "@/lib/api/finnhub.api";
+} from "@/lib/api/finance.api";
 import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -82,6 +82,21 @@ export default function CompanyCard({ company }: CompanyCardProps) {
     Sell: "text-red-400",
   }[company.investmentThesis.recommendation];
 
+  const formatPercentage = (value: number) => {
+    const formatted = Math.abs(value).toFixed(2);
+    return value >= 0 ? `+${formatted}` : `-${formatted}`;
+  };
+
+  const getChangeColor = (change: number) => {
+    return change >= 0 ? "text-green-400" : "text-red-400";
+  };
+
+  const getChartColor = (change: number) => {
+    return change >= 0
+      ? { border: "#4ade80", background: "rgba(74, 222, 128, 0.1)" }
+      : { border: "#ef4444", background: "rgba(239, 68, 68, 0.1)" };
+  };
+
   return (
     <motion.div
       className="relative p-6 bg-gray-800/50 backdrop-blur-lg rounded-xl hover:shadow-xl transition-all duration-300"
@@ -93,6 +108,8 @@ export default function CompanyCard({ company }: CompanyCardProps) {
         <div className="absolute inset-0 bg-gray-800/50 backdrop-blur-sm rounded-xl flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
         </div>
+      ) : error ? (
+        <div className="text-red-400 text-center py-4">{error}</div>
       ) : (
         <>
           <div className="flex justify-between items-start mb-4">
@@ -106,21 +123,22 @@ export default function CompanyCard({ company }: CompanyCardProps) {
                   ${stockData.regularMarketPrice.toFixed(2)}
                 </div>
                 <div
-                  className={`text-sm ${
-                    stockData.regularMarketChangePercent >= 0
-                      ? "text-green-400"
-                      : "text-red-400"
-                  }`}
+                  className={`text-sm ${getChangeColor(
+                    stockData.regularMarketChangePercent
+                  )}`}
                 >
                   {stockData.regularMarketChangePercent >= 0 ? "↑" : "↓"}{" "}
-                  {Math.abs(stockData.regularMarketChangePercent).toFixed(2)}%
+                  {formatPercentage(stockData.regularMarketChangePercent)}%
+                  <span className="text-xs ml-1 text-gray-400">
+                    (${Math.abs(stockData.regularMarketChange).toFixed(2)})
+                  </span>
                 </div>
               </div>
             )}
           </div>
 
           <div className="h-32 bg-gray-700/30 rounded-lg overflow-hidden mb-4">
-            {chartData.prices.length > 0 && (
+            {chartData.prices.length > 0 && stockData && (
               <Line
                 data={{
                   labels: chartData.dates,
@@ -128,8 +146,12 @@ export default function CompanyCard({ company }: CompanyCardProps) {
                     {
                       label: company.ticker,
                       data: chartData.prices,
-                      borderColor: "#4ade80",
-                      backgroundColor: "rgba(74, 222, 128, 0.1)",
+                      borderColor: getChartColor(
+                        stockData.regularMarketChangePercent
+                      ).border,
+                      backgroundColor: getChartColor(
+                        stockData.regularMarketChangePercent
+                      ).background,
                       fill: true,
                       tension: 0.4,
                       pointRadius: 0,

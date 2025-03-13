@@ -17,8 +17,6 @@ export interface StockCandles {
   volume: number[];
 }
 
-const YAHOO_BASE_URL = 'https://query1.finance.yahoo.com/v8/finance/chart';
-
 export const getStockQuote = async (symbol: string): Promise<StockQuote> => {
   const response = await fetch(
     `/api/stock/quote?symbol=${symbol}`
