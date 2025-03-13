@@ -40,6 +40,9 @@ export default function CompanyCard({ company }: CompanyCardProps) {
     prices: number[];
     dates: string[];
   }>({ prices: [], dates: [] });
+  const [timeframe, setTimeframe] = useState<"week" | "month" | "year">(
+    "month"
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +52,7 @@ export default function CompanyCard({ company }: CompanyCardProps) {
         setError(null);
         const [quote, candles] = await Promise.all([
           getStockQuote(company.ticker),
-          getStockCandles(company.ticker),
+          getStockCandles(company.ticker, timeframe),
         ]);
 
         setStockData(quote);
@@ -74,7 +77,7 @@ export default function CompanyCard({ company }: CompanyCardProps) {
     const interval = setInterval(fetchData, 60000);
 
     return () => clearInterval(interval);
-  }, [company.ticker]);
+  }, [company.ticker, timeframe]);
 
   const recommendationColor = {
     Buy: "text-green-400",
@@ -134,8 +137,23 @@ export default function CompanyCard({ company }: CompanyCardProps) {
                   </span>
                 </div>
               </div>
+              
             )}
           </div>
+
+          <div className="flex w-full gap-2 mb-4">
+              {["week", "month", "year"].map((period) => (
+                <button
+                  key={period}
+                  onClick={() => setTimeframe(period as "week" | "month" | "year")}
+                  className={`px-3 py-1 text-xs rounded-md ${
+                    timeframe === period ? "bg-blue-500 text-white" : "bg-gray-700 text-gray-400"
+                  }`}
+                >
+                  {period.charAt(0).toUpperCase() + period.slice(1)}
+                </button>
+              ))}
+            </div>
 
           <div className="h-32 bg-gray-700/30 rounded-lg overflow-hidden mb-4">
             {chartData.prices.length > 0 && stockData && (

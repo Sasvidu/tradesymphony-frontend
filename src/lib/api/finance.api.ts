@@ -18,20 +18,23 @@ export interface StockCandles {
 }
 
 export const getStockQuote = async (symbol: string): Promise<StockQuote> => {
-  const response = await fetch(
-    `/api/stock/quote?symbol=${symbol}`
-  );
+  const response = await fetch(`/api/stock/quote?symbol=${symbol}`);
   if (!response.ok) {
     throw new Error("Failed to fetch stock quote");
   }
   return response.json();
 };
 
-export const getStockCandles = async (symbol: string): Promise<StockCandles> => {
+export const getStockCandles = async (
+  symbol: string,
+  timeframe: "week" | "month" | "year"
+): Promise<StockCandles> => {
+  const range =
+    timeframe === "week" ? "7d" : timeframe === "month" ? "3mo" : "1y";
   const response = await fetch(
-    `/api/stock/history?symbol=${symbol}&range=3mo&interval=1d`
+    `/api/stock/history?symbol=${symbol}&range=${range}&interval=1d`
   );
-  
+
   if (!response.ok) {
     throw new Error("Failed to fetch stock candles");
   }
