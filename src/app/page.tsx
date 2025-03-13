@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Company } from "@/lib/types/company.types";
 import CompanyCard from "@/components/CompanyCard";
-import { useInvestmentStore } from "./store/insights-store";
+import { useInvestmentStore } from "../store/insights-store";
 
 export default function Dashboard() {
   const { companies, loading, error, fetchInvestmentData } =
