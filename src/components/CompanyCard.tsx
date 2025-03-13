@@ -19,6 +19,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import Link from "next/link";
 
 ChartJS.register(
   CategoryScale,
@@ -115,7 +116,10 @@ export default function CompanyCard({ company }: CompanyCardProps) {
         <div className="text-red-400 text-center py-4">{error}</div>
       ) : (
         <>
-          <div className="flex justify-between items-start mb-4">
+          <Link
+            href={`/${company.ticker}`}
+            className="flex justify-between items-start mb-4"
+          >
             <div>
               <h2 className="text-xl font-bold text-white">{company.name}</h2>
               <p className="text-gray-400">{company.ticker}</p>
@@ -137,23 +141,26 @@ export default function CompanyCard({ company }: CompanyCardProps) {
                   </span>
                 </div>
               </div>
-              
             )}
-          </div>
+          </Link>
 
           <div className="flex w-full gap-2 mb-4">
-              {["week", "month", "year"].map((period) => (
-                <button
-                  key={period}
-                  onClick={() => setTimeframe(period as "week" | "month" | "year")}
-                  className={`px-3 py-1 text-xs rounded-md ${
-                    timeframe === period ? "bg-blue-500 text-white" : "bg-gray-700 text-gray-400"
-                  }`}
-                >
-                  {period.charAt(0).toUpperCase() + period.slice(1)}
-                </button>
-              ))}
-            </div>
+            {["week", "month", "year"].map((period) => (
+              <button
+                key={period}
+                onClick={() =>
+                  setTimeframe(period as "week" | "month" | "year")
+                }
+                className={`px-3 py-1 text-xs rounded-md ${
+                  timeframe === period
+                    ? "bg-blue-500 text-white"
+                    : "bg-gray-700 text-gray-400"
+                }`}
+              >
+                {period.charAt(0).toUpperCase() + period.slice(1)}
+              </button>
+            ))}
+          </div>
 
           <div className="h-32 bg-gray-700/30 rounded-lg overflow-hidden mb-4">
             {chartData.prices.length > 0 && stockData && (
