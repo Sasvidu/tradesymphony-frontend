@@ -1,78 +1,231 @@
-'use client';
+"use client";
 
-import { Company } from '@/lib/types/company.types';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Company } from "@/lib/types/company.types";
+import {
+  getStockQuote,
+  getStockCandles,
+  StockQuote,
+} from "@/lib/api/finnhub.api";
+import { Line } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 interface CompanyCardProps {
   company: Company;
 }
 
 export default function CompanyCard({ company }: CompanyCardProps) {
+  const [stockData, setStockData] = useState<StockQuote | null>(null);
+  const [chartData, setChartData] = useState<{
+    prices: number[];
+    dates: string[];
+  }>({ prices: [], dates: [] });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setError(null);
+        const [quote, candles] = await Promise.all([
+          getStockQuote(company.ticker),
+          getStockCandles(company.ticker),
+        ]);
+
+        setStockData(quote);
+
+        if (candles.timestamp) {
+          setChartData({
+            prices: candles.close.filter((price) => price !== null),
+            dates: candles.timestamp.map((timestamp: number) =>
+              new Date(timestamp * 1000).toLocaleDateString()
+            ),
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching stock data:", error);
+        setError("Failed to fetch stock data");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 60000);
+
+    return () => clearInterval(interval);
+  }, [company.ticker]);
+
   const recommendationColor = {
-    Buy: 'text-green-400',
-    Hold: 'text-yellow-400',
-    Sell: 'text-red-400',
+    Buy: "text-green-400",
+    Hold: "text-yellow-400",
+    Sell: "text-red-400",
   }[company.investmentThesis.recommendation];
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-start">
-        <div>
-          <h2 className="text-xl font-bold text-white">{company.name}</h2>
-          <p className="text-gray-400">{company.ticker}</p>
+    <motion.div
+      className="relative p-6 bg-gray-800/50 backdrop-blur-lg rounded-xl hover:shadow-xl transition-all duration-300"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ scale: 1.02 }}
+    >
+      {loading ? (
+        <div className="absolute inset-0 bg-gray-800/50 backdrop-blur-sm rounded-xl flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
         </div>
-        <span className={`${recommendationColor} font-semibold`}>
-          {company.investmentThesis.recommendation}
-        </span>
-      </div>
+      ) : (
+        <>
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h2 className="text-xl font-bold text-white">{company.name}</h2>
+              <p className="text-gray-400">{company.ticker}</p>
+            </div>
+            {stockData && (
+              <div className="text-right">
+                <div className="text-xl font-bold text-white">
+                  ${stockData.regularMarketPrice.toFixed(2)}
+                </div>
+                <div
+                  className={`text-sm ${
+                    stockData.regularMarketChangePercent >= 0
+                      ? "text-green-400"
+                      : "text-red-400"
+                  }`}
+                >
+                  {stockData.regularMarketChangePercent >= 0 ? "↑" : "↓"}{" "}
+                  {Math.abs(stockData.regularMarketChangePercent).toFixed(2)}%
+                </div>
+              </div>
+            )}
+          </div>
 
-      <div className="space-y-2">
-        <p className="text-sm text-gray-300">
-          Sector: {company.industry.sector}
-        </p>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-300">Risk Level:</span>
-          <span className={`px-2 py-1 rounded-full text-xs ${
-            company.investmentThesis.riskAssessment.level === 'High' 
-              ? 'bg-red-500/20 text-red-300'
-              : company.investmentThesis.riskAssessment.level === 'Moderate'
-              ? 'bg-yellow-500/20 text-yellow-300'
-              : 'bg-green-500/20 text-green-300'
-          }`}>
-            {company.investmentThesis.riskAssessment.level}
-          </span>
-        </div>
-      </div>
+          <div className="h-32 bg-gray-700/30 rounded-lg overflow-hidden mb-4">
+            {chartData.prices.length > 0 && (
+              <Line
+                data={{
+                  labels: chartData.dates,
+                  datasets: [
+                    {
+                      label: company.ticker,
+                      data: chartData.prices,
+                      borderColor: "#4ade80",
+                      backgroundColor: "rgba(74, 222, 128, 0.1)",
+                      fill: true,
+                      tension: 0.4,
+                      pointRadius: 0,
+                    },
+                  ],
+                }}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                      mode: "index",
+                      intersect: false,
+                      backgroundColor: "rgba(17, 24, 39, 0.8)",
+                      titleColor: "white",
+                      bodyColor: "white",
+                      borderColor: "rgba(74, 222, 128, 0.2)",
+                      borderWidth: 1,
+                    },
+                  },
+                  scales: {
+                    x: {
+                      display: false,
+                    },
+                    y: {
+                      display: false,
+                    },
+                  },
+                  interaction: {
+                    intersect: false,
+                    mode: "index",
+                  },
+                }}
+              />
+            )}
+          </div>
 
-      <div className="mt-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-2">Expected Return</h3>
-        <div className="flex items-center space-x-2">
-          <span className="text-2xl font-bold text-white">
-            {company.investmentThesis.expectedReturn.value}%
-          </span>
-          <span className="text-sm text-gray-400">
-            in {company.investmentThesis.expectedReturn.timeframe}
-          </span>
-        </div>
-      </div>
+          <div className="grid grid-cols-2 gap-4 mb-4">
+            <div className="bg-gray-700/30 rounded-lg p-3">
+              <span className="text-sm text-gray-400">Risk Level</span>
+              <div
+                className={`mt-1 px-2 py-1 rounded-full text-xs inline-block ${
+                  company.investmentThesis.riskAssessment.level === "High"
+                    ? "bg-red-500/20 text-red-300"
+                    : company.investmentThesis.riskAssessment.level ===
+                      "Moderate"
+                    ? "bg-yellow-500/20 text-yellow-300"
+                    : "bg-green-500/20 text-green-300"
+                }`}
+              >
+                {company.investmentThesis.riskAssessment.level}
+              </div>
+            </div>
 
-      {/* Stock Chart placeholder - To be implemented with real data */}
-      <div className="h-32 bg-gray-700/30 rounded-lg mt-4">
-        {/* Chart will go here */}
-      </div>
+            <div className="bg-gray-700/30 rounded-lg p-3">
+              <span className="text-sm text-gray-400">Recommendation</span>
+              <div className={`mt-1 font-semibold ${recommendationColor}`}>
+                {company.investmentThesis.recommendation}
+              </div>
+            </div>
+          </div>
 
-      <div className="mt-4">
-        <h3 className="text-sm font-semibold text-gray-300 mb-2">Key Drivers</h3>
-        <div className="flex flex-wrap gap-2">
-          {company.investmentThesis.keyDrivers.map((driver, index) => (
-            <span 
-              key={index}
-              className="px-2 py-1 bg-gray-700/30 rounded-full text-xs text-gray-300"
-            >
-              {driver}
-            </span>
-          ))}
-        </div>
-      </div>
-    </div>
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-300 mb-2">
+                Expected Return
+              </h3>
+              <div className="flex items-center space-x-2">
+                <span className="text-2xl font-bold text-white">
+                  {company.investmentThesis.expectedReturn.value}%
+                </span>
+                <span className="text-sm text-gray-400">
+                  in {company.investmentThesis.expectedReturn.timeframe}
+                </span>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold text-gray-300 mb-2">
+                Key Drivers
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {company.investmentThesis.keyDrivers.map((driver, index) => (
+                  <span
+                    key={index}
+                    className="px-2 py-1 bg-gray-700/30 rounded-full text-xs text-gray-300"
+                  >
+                    {driver}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </motion.div>
   );
 }
