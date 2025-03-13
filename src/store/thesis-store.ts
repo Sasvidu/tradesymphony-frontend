@@ -35,9 +35,9 @@ export const useThesisStore = create<ThesisState>((set) => ({
           loading: false,
         });
       }
-    } catch (e: any) {
+    } catch {
       set({
-        error: e.message || "Failed to fetch thesis data.",
+        error: "Failed to fetch thesis data.",
         loading: false,
       });
     }

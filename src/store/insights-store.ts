@@ -31,8 +31,8 @@ export const useInvestmentStore = create<InvestmentState>((set) => ({
       } else {
         set({ error: 'Invalid data format received from API.', loading: false });
       }
-    } catch (e: any) {
-      set({ error: e.message || 'Failed to fetch investment data.', loading: false });
+    } catch {
+      set({ error: 'Failed to fetch investment data.', loading: false });
     }
   },
 }));

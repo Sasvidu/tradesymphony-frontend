@@ -63,7 +63,7 @@ export async function GET() {
     try {
       const jsonData = JSON.parse(fileContent);
       return NextResponse.json(jsonData);
-    } catch (jsonError) {
+    } catch {
       return NextResponse.json({ error: 'Error parsing thesis.json' }, { status: 500 });
     }
   } catch (error) {
