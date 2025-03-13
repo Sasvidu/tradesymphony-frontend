@@ -1,18 +1,34 @@
-'use client';
+"use client";
 
-import { motion } from 'framer-motion';
-import { Company } from '@/lib/types/company.types';
-import investmentData from '@/lib/investment.json';
-import CompanyCard from '@/components/CompanyCard';
-
-const companies = investmentData.companies as Company[];
+import { useEffect } from "react";
+import { motion } from "framer-motion";
+import { Company } from "@/lib/types/company.types";
+import CompanyCard from "@/components/CompanyCard";
+import { useInvestmentStore } from "./store/insights-store";
 
 export default function Dashboard() {
+  const { companies, loading, error, fetchInvestmentData } =
+    useInvestmentStore();
+
+  useEffect(() => {
+    if (companies.length === 0 && !loading && !error) {
+      fetchInvestmentData();
+    }
+  }, [companies, loading, error, fetchInvestmentData]);
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 to-gray-800 p-6">
       <div className="max-w-7xl mx-auto">
         <header className="mb-8">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl font-bold text-white mb-2"
